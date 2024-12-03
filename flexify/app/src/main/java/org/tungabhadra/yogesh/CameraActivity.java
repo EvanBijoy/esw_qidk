@@ -1,204 +1,170 @@
 package org.tungabhadra.yogesh;
 
-import android.Manifest;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.os.Handler;
-import android.view.SurfaceView;
 import android.view.View;
+import android.widget.ImageButton;
 import android.widget.TextView;
-import android.widget.Button;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.camera.core.CameraSelector;
+import androidx.camera.core.Preview;
+import androidx.camera.lifecycle.ProcessCameraProvider;
+import androidx.camera.view.PreviewView;
+import androidx.core.content.ContextCompat;
+import android.content.pm.PackageManager;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import com.qualcomm.qti.snpe.NeuralNetwork;
-import org.tungabhadra.yogesh.helpers.CameraHelper;
-import org.tungabhadra.yogesh.helpers.ModelHelper;
 
-public class CameraActivity extends AppCompatActivity implements CameraHelper.PoseDetectionListener {
-    private static final int PERMISSION_REQUEST_CAMERA = 1;
-    private static final int POSE_CONFIRMATION_TIME = 3000; // 3 seconds
+import com.google.common.util.concurrent.ListenableFuture;
 
-    private NeuralNetwork neuralNetwork;
-    private CameraHelper cameraHelper;
-    private ModelHelper modelHelper;
-    private YogaSequenceManager sequenceManager;
-    private TextView poseNameText;
-    private TextView poseProgressText;
-    private Button nextPoseButton;
-    private Handler poseConfirmationHandler;
-    private boolean isPoseConfirmed = false;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_camera);
+public class CameraActivity extends AppCompatActivity {
+    private PreviewView cameraPreviewView;
+    private TextView exerciseTitleText;
+    private ImageButton btnExit;
+    private ImageButton btnToggleCamera;
+    private ImageButton btnFlashToggle;
 
-        // Get the yoga set type from intent
-        String yogaSet = getIntent().getStringExtra("YOGA_SET");
+    private ExecutorService cameraExecutor;
+    private String currentExercise;
+    private boolean isFrontCamera = false;
 
-        // Initialize sequence manager
-        sequenceManager = new YogaSequenceManager(yogaSet);
+    private static final int CAMERA_PERMISSION_REQUEST_CODE = 101;
 
-        // Initialize handler for pose confirmation
-        poseConfirmationHandler = new Handler();
-
-        // Initialize UI elements
-        poseNameText = findViewById(R.id.poseNameText);
-        poseProgressText = findViewById(R.id.poseProgressText);
-        nextPoseButton = findViewById(R.id.nextPoseButton);
-
-        nextPoseButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                moveToNextPose();
-            }
-        });
-
-        // Initially disable the next pose button until pose is confirmed
-        nextPoseButton.setEnabled(false);
-
-        // Update UI with initial pose
-        updatePoseDisplay();
-
-        if (checkCameraPermission()) {
-            initializeComponents();
+    // Check and request camera permission
+    private void checkCameraPermission() {
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+            // Permission is not granted, request it
+            ActivityCompat.requestPermissions(this,
+                    new String[]{android.Manifest.permission.CAMERA},
+                    CAMERA_PERMISSION_REQUEST_CODE);
         } else {
-            requestCameraPermission();
+            // Permission granted, start the camera
+            startCamera();
         }
     }
 
-    private void initializeComponents() {
-        // Initialize model
-        modelHelper = new ModelHelper();
-        try {
-            neuralNetwork = modelHelper.loadModel(getApplication());
-        } catch (Exception e) {
-            e.printStackTrace();
-            Toast.makeText(this, "Failed to load neural network", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // Initialize views
-        SurfaceView cameraSurfaceView = findViewById(R.id.cameraSurfaceView);
-        SurfaceView overlaySurfaceView = findViewById(R.id.overlaySurfaceView);
-
-        // Initialize camera helper with both surfaces
-        cameraHelper = new CameraHelper(this, cameraSurfaceView, overlaySurfaceView, neuralNetwork);
-        cameraHelper.setSequenceManager(sequenceManager);
-        cameraHelper.setPoseDetectionListener(this);
-        cameraHelper.startCamera();
-    }
-
+    // Handle the result of the permission request
     @Override
-    public void onPoseDetected(String detectedPose) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                YogaSequenceManager.YogaPose currentPose = sequenceManager.getCurrentPose();
-                if (currentPose != null && detectedPose.equals(currentPose.getName())) {
-                    if (!isPoseConfirmed) {
-                        // Start the confirmation timer
-                        poseConfirmationHandler.postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                isPoseConfirmed = true;
-                                nextPoseButton.setEnabled(true);
-                                Toast.makeText(CameraActivity.this,
-                                        "Pose confirmed! You can move to the next pose.",
-                                        Toast.LENGTH_SHORT).show();
-                            }
-                        }, POSE_CONFIRMATION_TIME);
-                    }
-                } else {
-                    // Reset confirmation if wrong pose is detected
-                    isPoseConfirmed = false;
-                    nextPoseButton.setEnabled(false);
-                    poseConfirmationHandler.removeCallbacksAndMessages(null);
-                }
-            }
-        });
-    }
-
-    @Override
-    public void onPoseConfirmed(String confirmedPose) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                Toast.makeText(CameraActivity.this,
-                        "Great job! Pose maintained!",
-                        Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void updatePoseDisplay() {
-        YogaSequenceManager.YogaPose currentPose = sequenceManager.getCurrentPose();
-        if (currentPose != null) {
-            poseNameText.setText(currentPose.getName());
-            poseProgressText.setText(String.format("Pose %d/%d",
-                    sequenceManager.getCurrentPoseNumber(),
-                    sequenceManager.getTotalPoses()));
-
-            // Reset pose confirmation for new pose
-            isPoseConfirmed = false;
-            nextPoseButton.setEnabled(false);
-
-            // If this is the last pose, change button text
-            if (sequenceManager.isSequenceComplete()) {
-                nextPoseButton.setText("Finish");
-            }
-        }
-    }
-
-    private void moveToNextPose() {
-        if (sequenceManager.isSequenceComplete()) {
-            finish(); // Return to main activity
-        } else {
-            sequenceManager.moveToNextPose();
-            updatePoseDisplay();
-        }
-    }
-
-    private boolean checkCameraPermission() {
-        return ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-                == PackageManager.PERMISSION_GRANTED;
-    }
-
-    private void requestCameraPermission() {
-        ActivityCompat.requestPermissions(
-                this,
-                new String[]{Manifest.permission.CAMERA},
-                PERMISSION_REQUEST_CAMERA
-        );
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == PERMISSION_REQUEST_CAMERA) {
+        if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                initializeComponents();
+                // Permission granted
+                startCamera();
             } else {
+                // Permission denied
                 Toast.makeText(this, "Camera permission is required", Toast.LENGTH_SHORT).show();
                 finish();
             }
         }
     }
 
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_camera);
+
+        // Hide action bar
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().hide();
+        }
+
+        // Get exercise from intent
+        currentExercise = getIntent().getStringExtra("EXERCISE");
+        if (currentExercise == null) {
+            Toast.makeText(this, "No exercise selected", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        // Initialize views
+        cameraPreviewView = findViewById(R.id.camera_preview);
+        exerciseTitleText = findViewById(R.id.exercise_title);
+        btnExit = findViewById(R.id.btn_exit);
+        btnToggleCamera = findViewById(R.id.btn_toggle_camera);
+        btnFlashToggle = findViewById(R.id.btn_flash_toggle);
+
+        // Set exercise title
+        exerciseTitleText.setText(formatExerciseName(currentExercise));
+
+        // Setup camera executor
+        cameraExecutor = Executors.newSingleThreadExecutor();
+
+        // Setup button listeners
+        setupButtonListeners();
+
+        // Start camera
+        startCamera();
+    }
+
+    private String formatExerciseName(String exercise) {
+        switch (exercise) {
+            case "BicepCurls": return "Bicep Curls";
+            default: return exercise;
+        }
+    }
+
+    private void setupButtonListeners() {
+        // Exit button
+        btnExit.setOnClickListener(v -> finish());
+
+        // Camera toggle button
+        btnToggleCamera.setOnClickListener(v -> {
+            isFrontCamera = !isFrontCamera;
+            startCamera();
+        });
+
+        // Flash toggle button (placeholder - you'll need to implement actual flash logic)
+        btnFlashToggle.setOnClickListener(v -> {
+            Toast.makeText(this, "Flash toggle not implemented", Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void startCamera() {
+        ListenableFuture<ProcessCameraProvider> cameraProviderFuture =
+                ProcessCameraProvider.getInstance(this);
+
+        cameraProviderFuture.addListener(() -> {
+            try {
+                ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
+
+                // Setup preview
+                Preview preview = new Preview.Builder().build();
+                preview.setSurfaceProvider(cameraPreviewView.getSurfaceProvider());
+
+                // Select camera
+                CameraSelector cameraSelector = isFrontCamera
+                        ? CameraSelector.DEFAULT_FRONT_CAMERA
+                        : CameraSelector.DEFAULT_BACK_CAMERA;
+
+                // Unbind any previous use cases
+                cameraProvider.unbindAll();
+
+                // Bind use cases to camera
+                cameraProvider.bindToLifecycle(
+                        this,
+                        cameraSelector,
+                        preview
+                );
+
+            } catch (Exception e) {
+                Toast.makeText(this, "Camera initialization failed", Toast.LENGTH_SHORT).show();
+            }
+        }, ContextCompat.getMainExecutor(this));
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (neuralNetwork != null) {
-            neuralNetwork.release();
+        if (cameraExecutor != null) {
+            cameraExecutor.shutdown();
         }
-        if (cameraHelper != null) {
-            cameraHelper.shutdown();
-        }
-        // Remove any pending callbacks
-        poseConfirmationHandler.removeCallbacksAndMessages(null);
     }
 }

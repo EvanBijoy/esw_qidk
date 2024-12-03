@@ -60,16 +60,9 @@ dependencies {
     implementation(name: 'snpe-release', ext: 'aar')
     implementation(name: 'platform-validator', ext: 'aar')
 
-    // CameraX core library
-    implementation "androidx.camera:camera-core:1.1.0"
-
-    // CameraX camera2 library
-    implementation "androidx.camera:camera-camera2:1.1.0"
-
-    // CameraX lifecycle library (optional, but recommended for lifecycle management)
-    implementation "androidx.camera:camera-lifecycle:1.1.0"
-
-    // CameraX view library (optional, for camera preview UI)
-    implementation "androidx.camera:camera-view:1.1.0"
-
+    def camerax_version = "1.2.2"
+    implementation "androidx.camera:camera-core:${camerax_version}"
+    implementation "androidx.camera:camera-camera2:${camerax_version}"
+    implementation "androidx.camera:camera-lifecycle:${camerax_version}"
+    implementation "androidx.camera:camera-view:${camerax_version}"
 }

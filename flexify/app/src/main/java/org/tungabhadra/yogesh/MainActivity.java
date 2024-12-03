@@ -14,45 +14,56 @@ public class MainActivity extends AppCompatActivity {
         getSupportActionBar().hide();
         setContentView(R.layout.activity_selection);
 
-        MaterialCardView cardSuryanamaskara = findViewById(R.id.card_suryanamaskara);
-        MaterialCardView cardYogaSet1 = findViewById(R.id.card_yoga_set1);
-        MaterialCardView cardYogaSet2 = findViewById(R.id.card_yoga_set2);
+        MaterialCardView cardPlank = findViewById(R.id.card_plank);
+        MaterialCardView cardSquat = findViewById(R.id.card_squat);
+        MaterialCardView cardBicepCurls = findViewById(R.id.card_bicep_curls);
+        MaterialCardView cardPushup = findViewById(R.id.card_pushup);
 
-        cardSuryanamaskara.setOnClickListener(new View.OnClickListener() {
+        cardPlank.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startCameraActivity("Suryanamaskara");
+                startCameraActivity("Plank");
             }
         });
 
-        cardYogaSet1.setOnClickListener(new View.OnClickListener() {
+        cardSquat.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startCameraActivity("Yoga Set 1");
+                startCameraActivity("Squat");
             }
         });
 
-        cardYogaSet2.setOnClickListener(new View.OnClickListener() {
+        cardBicepCurls.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startCameraActivity("Yoga Set 2");
+                startCameraActivity("BicepCurls");
+            }
+        });
+
+        cardPushup.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startCameraActivity("Pushup");
             }
         });
 
         // Add ripple effect to cards
-        cardSuryanamaskara.setClickable(true);
-        cardSuryanamaskara.setFocusable(true);
+        cardPlank.setClickable(true);
+        cardPlank.setFocusable(true);
 
-        cardYogaSet1.setClickable(true);
-        cardYogaSet1.setFocusable(true);
+        cardSquat.setClickable(true);
+        cardSquat.setFocusable(true);
 
-        cardYogaSet2.setClickable(true);
-        cardYogaSet2.setFocusable(true);
+        cardBicepCurls.setClickable(true);
+        cardBicepCurls.setFocusable(true);
+
+        cardPushup.setClickable(true);
+        cardPushup.setFocusable(true);
     }
 
     private void startCameraActivity(String yogaSet) {
         Intent intent = new Intent(this, CameraActivity.class);
-        intent.putExtra("YOGA_SET", yogaSet);
+        intent.putExtra("EXERCISE", yogaSet);
         startActivity(intent);
     }
 }
