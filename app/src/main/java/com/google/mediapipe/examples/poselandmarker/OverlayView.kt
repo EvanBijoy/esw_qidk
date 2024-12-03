@@ -62,16 +62,8 @@ class OverlayView(context: Context?, attrs: AttributeSet?) :
     override fun draw(canvas: Canvas) {
         super.draw(canvas)
         results?.let { poseLandmarkerResult ->
-            val jointConnections = listOf(
-                Triple(11, 13, "Left Shoulder-Elbow"),
-                Triple(13, 15, "Left Elbow-Wrist"),
-                Triple(23, 25, "Left Hip-Knee"),
-                Triple(25, 27, "Left Knee-Ankle"),
-                Triple(12, 14, "Right Shoulder-Elbow"),
-                Triple(14, 16, "Right Elbow-Wrist"),
-                Triple(24, 26, "Right Hip-Knee"),
-                Triple(26, 28, "Right Knee-Ankle")
-            )
+
+
 
             var formFeedback = ""
             poseLandmarkerResult.landmarks().forEach { landmarks ->
