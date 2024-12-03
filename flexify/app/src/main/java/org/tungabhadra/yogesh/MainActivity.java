@@ -18,6 +18,7 @@ public class MainActivity extends AppCompatActivity {
         MaterialCardView cardSquat = findViewById(R.id.card_squat);
         MaterialCardView cardBicepCurls = findViewById(R.id.card_bicep_curls);
         MaterialCardView cardPushup = findViewById(R.id.card_pushup);
+        MaterialCardView cardSuryanamaskara = findViewById(R.id.card_suryanamaskara);
 
         cardPlank.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -44,6 +45,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 startCameraActivity("Pushup");
+            }
+        });
+
+        cardSuryanamaskara.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startCameraActivity("Suryanamaskara");
             }
         });
 
