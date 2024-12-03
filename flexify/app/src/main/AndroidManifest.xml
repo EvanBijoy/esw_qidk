@@ -19,10 +19,6 @@
             android:name=".MainActivity"
             android:exported="true">
         </activity>
-        <activity
-            android:name=".SettingsActivity"
-            android:exported="false"
-            android:label="Settings"/>
         <activity android:name=".CameraActivity" />
         <activity
             android:name=".SplashActivity"
